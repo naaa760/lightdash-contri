@@ -183,7 +183,7 @@ export class SpaceService extends BaseService implements BulkActionable<Knex> {
             },
         );
 
-        // Nested spaces MVP: Nested spaces inherit access from their root space, but don't need to have that access added to them explicitly
+        // Nested spaces can now have their own permissions and privacy settings
         if (space.access)
             await Promise.all(
                 space.access.map((access) =>
@@ -224,11 +224,7 @@ export class SpaceService extends BaseService implements BulkActionable<Knex> {
             user.userUuid,
             spaceUuid,
         );
-        // Nested Spaces MVP - disables nested spaces' access changes
-        const isNested = !(await this.spaceModel.isRootSpace(spaceUuid));
-        if (isNested && 'isPrivate' in updateSpace) {
-            throw new ForbiddenError(`Can't change privacy for a nested space`);
-        }
+
         if (
             user.ability.cannot(
                 'manage',
@@ -254,7 +250,7 @@ export class SpaceService extends BaseService implements BulkActionable<Knex> {
                 projectId: space.projectUuid,
                 isPrivate: space.isPrivate,
                 userAccessCount: space.access.length,
-                isNested,
+                isNested: !!space.parentSpaceUuid,
             },
         });
         return updatedSpace;
@@ -274,7 +270,7 @@ export class SpaceService extends BaseService implements BulkActionable<Knex> {
         const space = await this.spaceModel.getSpaceSummary(resource.spaceUuid);
         const spaceAccess = await this.spaceModel.getUserSpaceAccess(
             actor.user.userUuid,
-            space.parentSpaceUuid ?? resource.spaceUuid,
+            resource.spaceUuid,
         );
 
         const isActorAllowedToPerformAction = actor.user.ability.can(
@@ -431,13 +427,7 @@ export class SpaceService extends BaseService implements BulkActionable<Knex> {
             user.userUuid,
             spaceUuid,
         );
-        // Nested Spaces MVP - disables nested spaces' access changes
-        const isNested = !(await this.spaceModel.isRootSpace(spaceUuid));
-        if (isNested) {
-            throw new ForbiddenError(
-                `Can't change user access to a nested space`,
-            );
-        }
+
         if (
             user.ability.cannot(
                 'manage',
@@ -467,13 +457,7 @@ export class SpaceService extends BaseService implements BulkActionable<Knex> {
             user.userUuid,
             spaceUuid,
         );
-        // Nested Spaces MVP - disables nested spaces' access changes
-        const isNested = !(await this.spaceModel.isRootSpace(spaceUuid));
-        if (isNested) {
-            throw new ForbiddenError(
-                `Can't change user access to a nested space`,
-            );
-        }
+
         if (
             user.ability.cannot(
                 'manage',
@@ -500,13 +484,7 @@ export class SpaceService extends BaseService implements BulkActionable<Knex> {
             user.userUuid,
             spaceUuid,
         );
-        // Nested Spaces MVP - disables nested spaces' access changes
-        const isNested = !(await this.spaceModel.isRootSpace(spaceUuid));
-        if (isNested) {
-            throw new ForbiddenError(
-                `Can't change group access to a nested space`,
-            );
-        }
+
         if (
             user.ability.cannot(
                 'manage',
@@ -536,13 +514,7 @@ export class SpaceService extends BaseService implements BulkActionable<Knex> {
             user.userUuid,
             spaceUuid,
         );
-        // Nested Spaces MVP - disables nested spaces' access changes
-        const isNested = !(await this.spaceModel.isRootSpace(spaceUuid));
-        if (isNested) {
-            throw new ForbiddenError(
-                `Can't change group access to a nested space`,
-            );
-        }
+
         if (
             user.ability.cannot(
                 'manage',
